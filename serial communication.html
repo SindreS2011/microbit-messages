@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html>
+<body>
+    <button id="connect">Connect to Micro:Bit</button>
+    <pre id="output"></pre>
+    <script>
+        document.getElementById('connect').addEventListener('click', async () => {
+            try {
+                const port = await navigator.serial.requestPort();
+                await port.open({ baudRate: 115200 });
+                const decoder = new TextDecoderStream();
+                const inputDone = port.readable.pipeTo(decoder.writable);
+                const inputStream = decoder.readable;
+                const reader = inputStream.getReader();
+                while (true) {
+                    const { value, done } = await reader.read();
+                    if (done) {
+                        break;
+                    }
+                    document.getElementById('output').textContent += value;
+                }
+            } catch (error) {
+                console.error('Error:', error);
+            }
+        });
+    </script>
+</body>
+</html>
