@@ -1,28 +1,57 @@
 <!DOCTYPE html>
 <html>
+<head>
+  <meta charset="UTF-8">
+  <title>micro:chat</title>
+</head>
 <body>
-    <button id="connect">Connect to Micro:Bit</button>
-    <pre id="output"></pre>
-    <script>
-        document.getElementById('connect').addEventListener('click', async () => {
-            try {
-                const port = await navigator.serial.requestPort();
-                await port.open({ baudRate: 115200 });
-                const decoder = new TextDecoderStream();
-                const inputDone = port.readable.pipeTo(decoder.writable);
-                const inputStream = decoder.readable;
-                const reader = inputStream.getReader();
-                while (true) {
+  <button id="connect">Connect to micro:bit</button>
+  <input type="text" id="message" placeholder="Type message">
+  <button id="send">Send</button>
+  <pre id="output"></pre>
+
+  <script>
+    let port;
+    let writer;
+
+    document.getElementById('connect').addEventListener('click', async () => {
+      try {
+        // Request serial port
+        port = await navigator.serial.requestPort();
+        await port.open({ baudRate: 115200 });
+
+
+        // Get writer
+        writer = port.writable.getWriter();
+        alert("Connected to micro:bit!");
+      } catch (err) {
+        console.error("Connection failed:", err);
+      }
+
+      const decoder = new TextDecoderStream();
+      const inputDone = port.readable.pipeTo(decoder.writable);
+      const inputStream = decoder.readable;
+      const reader = inputStream.getReader();
+
+      while (true) {
                     const { value, done } = await reader.read();
                     if (done) {
                         break;
                     }
                     document.getElementById('output').textContent += value;
-                }
-            } catch (error) {
-                console.error('Error:', error);
-            }
-        });
-    </script>
+      }
+
+    });
+
+    document.getElementById('send').addEventListener('click', async () => {
+      if (!writer) {
+        alert("Please connect first.");
+        return;
+      }
+      const msg = document.getElementById('message').value + "\n";
+      const data = new TextEncoder().encode(msg);
+      await writer.write(data);
+    });
+  </script>
 </body>
 </html>
